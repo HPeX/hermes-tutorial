@@ -27,6 +27,28 @@ project(hermes-tutorial)
   set(CMAKE_MODULE_PATH ${CMAKE_HOME_DIRECTORY}/cmake)
   include(CommonTargetProperties)
 
+    # PETSc
+      # If PETSc is enabled, PETSC_ROOT and PETSC_ARCH must be set as well;
+      # if PETSc is disabled, PETSC_ROOT and PETSC_ARCH will be ignored.
+      set(WITH_PETSC              NO)
+      set(PETSC_ROOT              /opt/petsc/petsc-3.1-p7)
+      set(PETSC_ARCH              petsc-arch-without-scalar-type)
+
+
+#JP    # SuperLU
+      # First option enables sequential SuperLU, which should reside in SUPERLU_ROOT/lib
+      # and SUPERLU_ROOT/include. If SUPERLU_ROOT is not provided, the library will be searched
+      # for in system directories. If SUPERLU_MT is set to YES, the multithreaded version of
+      # SuperLU will be used. In this case, there should be either superlu_mt_PTHREAD.a and/or
+      # superlu_mt_OPENMP.a libraries present in the search path (the former will be chosen if
+      # WITH_OPENMP is set to NO, the latter otherwise). There should also be a subdirectory
+      # SLU_MT in the include directory since SuperLU_MT uses different versions of the same-named
+      # header files as the serial library.
+      set(WITH_SUPERLU            NO)
+      set(SUPERLU_ROOT            /opt/SuperLU_4.0/)
+      set(SUPERLU_MT              NO)
+#eJP
+
   # For Win64
   if(${CMAKE_CL_64})
     set(WIN64 YES)
@@ -41,8 +63,8 @@ project(hermes-tutorial)
 
   # Allow to override the default values in CMake.vars:
   include(CMake.vars OPTIONAL)
-  include(".CMake.vars.default.Linux" OPTIONAL)
-  include(${HERMES_CMAKE_VARS_FILE_LOCATION} OPTIONAL)
+#  include(".CMake.vars.default.Linux" OPTIONAL)
+#  include(${HERMES_CMAKE_VARS_FILE_LOCATION} OPTIONAL)
 
   if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		# Disable all warnings and turn on only important ones:
@@ -103,6 +125,17 @@ project(hermes-tutorial)
       add_definitions(-DWITH_BLAS)  
     endif(WITH_UMFPACK OR WITH_PETSC OR WITH_MUMPS OR WITH_TRILINOS OR WITH_SUPERLU)
   endif(MSVC)
+  
+  if(WITH_PETSC)
+    find_package(PETSC REQUIRED)
+    # For some header files, PETSc uses the same name for both real and complex
+    # versions (they only reside in different directories), so we can't globally
+    # set the architecture-specific include directory here, but rather on a
+    # per-target basis.
+    include_directories(${PETSC_INCLUDE_DIRS})
+    include_directories(${PETSC_CPLX_INCLUDE_DIRS})
+    set(PETSC_LIBRARIES ${PETSC_CPLX_LIBRARIES})
+  endif(WITH_PETSC)
 
   if(WITH_MUMPS)
     find_package(MUMPS REQUIRED)
